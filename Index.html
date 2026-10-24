@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Omaruru Rides</title>
+<style>*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}body{background:#f5f5f5;padding:10px;padding-bottom:90px}.header{background:#111;color:#FFD700;padding:15px;text-align:center;border-radius:12px}.live{color:#22c55e;font-size:12px;margin-top:5px;font-weight:bold}.tabs{display:flex;gap:6px;margin:12px 0}.tab{flex:1;padding:11px;text-align:center;background:#ddd;border-radius:20px;font-size:12px;font-weight:bold;border:none;cursor:pointer}.tab.active{background:#FFD700;color:#111}.search{width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;margin-bottom:12px}.card{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;border-left:5px solid #ef4444}.card.available{border-left-color:#22c55e;background:#f0fdf4}.name{font-weight:bold}.meta{font-size:11px;color:#555}.price{background:#FFD700;padding:4px 9px;border-radius:12px;font-size:12px;font-weight:bold;float:right}.status{font-size:11px;font-weight:bold;margin-top:4px}.online{color:#16a34a}.offline{color:#dc2626}.btn-row{display:flex;gap:6px;margin-top:8px}.btn{flex:1;padding:9px;border:none;border-radius:20px;font-weight:bold;text-align:center;text-decoration:none;display:block;font-size:12px}.call{background:#111;color:#FFD700}.wa{background:#25D366;color:#fff}.avail{width:100%;background:#22c55e;color:#fff;margin-top:6px}.avail.busy{background:#ef4444}.add{position:fixed;bottom:70px;right:15px;background:#FFD700;padding:14px 18px;border-radius:30px;font-weight:bold;border:none;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3)}.note{background:#fff3cd;padding:8px;border-radius:8px;font-size:11px;margin-bottom:10px;text-align:center}.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:200}.modal.active{display:flex}.modal-box{background:#fff;padding:20px;border-radius:12px;width:92%;max-width:360px}.modal-box input,.modal-box select{width:100%;padding:11px;margin:6px 0;border:1px solid #ccc;border-radius:8px}.modal-box button{width:100%;padding:12px;margin-top:8px;border:none;border-radius:8px;font-weight:bold}.save{background:#111;color:#FFD700}.cancel{background:#ddd}</style></head><body>
+<div class="header"><h1>🚕 OMARURU RIDES</h1><p style="font-size:12px;color:#fff">Local N$20-30 | Long N$80-250 | 0818455353</p><div id="liveCount" class="live"></div></div>
+<div id="adminNote" class="note" style="display:none">👑 ADMIN: Add/Edit</div>
+<div id="driverNote" class="note">ℹ️ DRIVER: Tap 🟢 when at rank</div>
+<div class="tabs">
+<button class="tab active" data-f="all">All</button>
+<button class="tab" data-f="local">Local</button>
+<button class="tab" data-f="long">Long</button>
+<button class="tab" data-f="available">🟢 Free</button>
+</div>
+<input id="search" class="search" placeholder="Search Windhoek, Kalkfeld..." autocomplete="off">
+<div id="list"></div>
+<button class="add" id="addBtn" style="display:none">+ Add Driver</button>
+<div id="modal" class="modal"><div class="modal-box"><h3>Add / Edit Driver</h3><input id="mName" placeholder="Name"><input id="mPhone" placeholder="081..."><select id="mTo"><option value="">Destination</option><option>Omaruru Town</option><option>Omaruru Location</option><option>Ozondje</option><option>Kalkfeld</option><option>Usakos</option><option>Karibib</option><option>Outjo</option><option>Otjiwarongo</option><option>Windhoek</option><option>Swakopmund</option><option>Walvis Bay</option></select><input id="mPrice" type="number" placeholder="Price"><select id="mRank"><option value="">Rank</option><option>Spar</option><option>Shoprite</option><option>Omap</option><option>Location</option><option>On Call</option></select><input type="hidden" id="mId"><button class="save" id="saveBtn">Save</button><button class="cancel" id="cancelBtn">Cancel</button></div></div>
+<script>
+var defaultDrivers=[
+{name:"Tomas - Spar Local",phone:"0818455353",to:"Omaruru Town",price:25,rank:"Spar",type:"local",available:true,lastSeen:"Now"},
+{name:"Johannes - Kalkfeld",phone:"0811234567",to:"Kalkfeld",price:80,rank:"Shoprite",type:"long",available:true,lastSeen:"Now"},
+{name:"Petrus - Windhoek",phone:"0812345678",to:"Windhoek",price:250,rank:"On Call",type:"long",available:false,lastSeen:"Off"},
+{name:"Kale - Usakos",phone:"0813456789",to:"Usakos",price:100,rank:"Spar",type:"long",available:true,lastSeen:"Now"},
+{name:"David - Karibib",phone:"0814567890",to:"Karibib",price:90,rank:"Spar",type:"long",available:false,lastSeen:"Off"}
+];
+var drivers=JSON.parse(localStorage.getItem('omaruru_v6')||'null')||defaultDrivers;
+var currentFilter='all';
+var isAdmin=window.location.search.indexOf('0818455353')!==-1;
+function saveStore(){localStorage.setItem('omaruru_v6',JSON.stringify(drivers));}
+function render(){
+ var q=document.getElementById('search').value.toLowerCase().trim();
+ var list=document.getElementById('list'); list.innerHTML='';
+ var filtered=drivers.slice().sort(function(a,b){return (b.available?1:0)-(a.available?1:0);});
+ if(currentFilter==='local') filtered=filtered.filter(function(d){return d.type==='local';});
+ if(currentFilter==='long') filtered=filtered.filter(function(d){return d.type==='long';});
+ if(currentFilter==='available') filtered=filtered.filter(function(d){return d.available;});
+ if(q) filtered=filtered.filter(function(d){return (d.name+' '+d.to+' '+d.rank).toLowerCase().indexOf(q)>-1;});
+ document.getElementById('liveCount').innerText='🟢 '+drivers.filter(function(d){return d.available;}).length+' Available / '+drivers.length+' Total';
+ if(filtered.length===0){list.innerHTML='<p style="text-align:center;padding:30px;color:#666">No drivers for "'+q+'"</p>';return;}
+ filtered.forEach(function(d){
+  var real=drivers.indexOf(d);
+  var div=document.createElement('div'); div.className='card'+(d.available?' available':'');
+  div.innerHTML='<div><span class="price">N$'+d.price+'</span><div class="name">'+d.name+'</div><div class="meta">To: '+d.to+' • '+d.rank+' • '+d.type+'</div><div class="status '+(d.available?'online':'offline')+'">'+(d.available?'🟢 AVAILABLE':'🔴 OFFLINE')+' • '+d.lastSeen+'</div></div><div class="btn-row"><a class="btn call" href="tel:+264'+d.phone.substring(1)+'">📞 CALL</a><a class="btn wa" href="https://wa.me/264'+d.phone.substring(1)+'">WhatsApp</a></div><div class="btn-row"><button class="btn avail '+(d.available?'':'busy')+'" data-toggle="'+real+'">'+(d.available?'🔴 Go Offline':'🟢 At Rank')+'</button>'+(isAdmin?'<button class="btn" style="background:#e5e7eb;flex:0.4" data-edit="'+real+'">Edit</button>':'')+'</div>';
+  list.appendChild(div);
+ });
+ document.getElementById('addBtn').style.display=isAdmin?'block':'none';
+ document.getElementById('adminNote').style.display=isAdmin?'block':'none';
+}
+document.addEventListener('click',function(e){
+ if(e.target.classList.contains('tab')){
+  currentFilter=e.target.getAttribute('data-f');
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  e.target.classList.add('active');
+  render();
+ }
+ if(e.target.hasAttribute('data-toggle')){
+  var id=parseInt(e.target.getAttribute('data-toggle'));
+  drivers[id].available=!drivers[id].available;
+  drivers[id].lastSeen=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  saveStore(); render();
+ }
+ if(e.target.hasAttribute('data-edit')){
+  var id=parseInt(e.target.getAttribute('data-edit'));
+  var d=drivers[id];
+  document.getElementById('mName').value=d.name;
+  document.getElementById('mPhone').value=d.phone;
+  document.getElementById('mTo').value=d.to;
+  document.getElementById('mPrice').value=d.price;
+  document.getElementById('mRank').value=d.rank;
+  document.getElementById('mId').value=id;
+  document.getElementById('modal').classList.add('active');
+ }
+});
+document.getElementById('search').addEventListener('input',render);
+document.getElementById('addBtn').addEventListener('click',function(){document.getElementById('mId').value='';document.getElementById('modal').classList.add('active');});
+document.getElementById('cancelBtn').addEventListener('click',function(){document.getElementById('modal').classList.remove('active');});
+document.getElementById('saveBtn').addEventListener('click',function(){
+ var name=document.getElementById('mName').value.trim();
+ var phone=document.getElementById('mPhone').value.trim();
+ var to=document.getElementById('mTo').value;
+ var price=parseInt(document.getElementById('mPrice').value)||20;
+ var rank=document.getElementById('mRank').value;
+ var id=document.getElementById('mId').value;
+ if(!name||!phone||!to){alert('Fill name, phone, destination');return;}
+ var type=['Omaruru Town','Omaruru Location','Ozondje'].indexOf(to)>-1?'local':'long';
+ if(id!==''){drivers[parseInt(id)]={...drivers[parseInt(id)],name,phone,to,price,rank,type};}
+ else {drivers.push({name,phone,to,price,rank,type,available:true,lastSeen:'Just now'});}
+ saveStore(); document.getElementById('modal').classList.remove('active'); render();
+});
+render();
+</script></body></html>
